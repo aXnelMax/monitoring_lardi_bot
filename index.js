@@ -1,6 +1,12 @@
 import * as puppeteer from 'puppeteer';
-//const puppeteer = require('puppeteer');
+import dotenv from 'dotenv/config';
+import express from 'express';
+import { Telegraf } from 'telegraf';
 import { insertDataToDB } from './db.js';
+
+const app = express();
+const PORT = 3000;
+const bot = new Telegraf(process.env.tgKEY);
 
 const url = 'https://lardi-trans.com/gruz/c640r10h640j6q1y1.html';
 const userId = 478243252;
@@ -97,5 +103,5 @@ async function main(url) {
 };
 
 
-
+app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 main(url);
