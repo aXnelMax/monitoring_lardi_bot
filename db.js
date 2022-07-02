@@ -15,6 +15,12 @@ const db = new Database(dbFile, OPENREADWRITE, (err) => {
 export function insertDataToDB(userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
     let q = `INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
         `VALUES (${userid}, ${loadid}, '${String(direction)}', '${String(loadDate)}', '${String(trasportType)}', '${String(fromTown)}', '${String(whereTown)}', '${String(paymentInfo)}', '${String(paymentDetails)}', '${String(cargo)}')`;
-    console.log(q);
         db.run(q);
+}
+
+export function initialPrepareDB(userid, loadid, link) {
+    let deleteQuery = `DELETE FROM currentloads`;
+    db.run(deleteQuery);
+    let q = `INSERT INTO currentloads (userid, loadid, link) VALUES (${userid}, ${loadid}, ${link})`;
+    db.run(q);
 }

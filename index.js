@@ -1,12 +1,13 @@
+import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
-import dotenv from 'dotenv/config';
 import express from 'express';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB } from './db.js';
+import { insertDataToDB, initialPrepareDB } from './db.js';
+import { getMainMenu } from './botkeyboard.js';
 
 const app = express();
 const PORT = 3000;
-const bot = new Telegraf(process.env.tgKEY);
+const bot = new Telegraf(process.env.botKEY);
 
 const url = 'https://lardi-trans.com/gruz/c640r10h640j6q1y1.html';
 const userId = 478243252;
@@ -88,11 +89,8 @@ async function main(url) {
     const loadid = await getAttributeData(page, dataId);
 
     for (let i = 0; i < loadDate.length; i++) {
-      paymentInfo[i] = String(paymentInfo[i]);
-      paymentDetails[i] = String(paymentDetails[i]);
       insertDataToDB(userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
       //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
-      //console.log('====================');
     }
 
 
@@ -102,6 +100,11 @@ async function main(url) {
   }
 };
 
+bot.start(ctx => {
+  ctx.reply('Привет. Стартовый запуск', getMainMenu());
+});
 
+bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
+
 main(url);
