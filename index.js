@@ -100,9 +100,37 @@ async function main(url) {
   }
 };
 
+
+async function getInitialLoadsIds(url) {
+  try {
+    const browser = await puppeteer.launch();
+    const [page] = await browser.pages();
+
+    await page.goto(url, { waitUntil: 'networkidle2' });
+
+    const loadid = await getAttributeData(page, dataId);
+
+    initialPrepareDB(userId, loadid, url);
+    
+    await browser.close();
+  } catch (err) {
+    console.error(err);
+  }
+};
+
+
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
 });
+
+bot.hears('Начать мониторинг', (ctx) => {
+  getInitialLoadsIds(url);
+  
+  ctx.reply('Мониторинг начат');
+});
+
+bot.hears('Остановить мониторинг', (ctx) => ctx.reply('Мониторинг остановлен'));
+bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
