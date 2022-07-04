@@ -14,7 +14,7 @@ const db = new Database(dbFile, OPENREADWRITE, (err) => {
 
 export function insertDataToDB(userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
     let q = `INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
-        `VALUES (${userid}, ${loadid}, '${String(direction)}', '${String(loadDate)}', '${String(trasportType)}', '${String(fromTown)}', '${String(whereTown)}', '${String(paymentInfo)}', '${String(paymentDetails)}', '${String(cargo)}')`;
+        `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}")`;
     db.run(q);
 }
 
@@ -53,9 +53,12 @@ export function getUrls(userid) {
     return urls;
 }
 
-export function monitoring() {
+export async function monitoring() {
     let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
-    db.all(currentUserMonitoring, (err, rows) => {
+    let deleteQuery = `DELETE FROM loads`;
+    db.run(deleteQuery);
+    console.log('Clearing database...');
+    await db.all(currentUserMonitoring, (err, rows) => {
         if (err) return console.error(err.message);
         rows.forEach(row => {
             let links = `SELECT link FROM userlinks WHERE userid=${row.userid}`;
@@ -67,4 +70,5 @@ export function monitoring() {
             });
         });
     });
+    console.log('Database is updated...');
 }

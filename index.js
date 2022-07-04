@@ -106,12 +106,12 @@ export async function getInitialLoadsIds(userid, url) {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
 
-    
-      await page.goto(url, { waitUntil: 'networkidle2' });
 
-      const loadid = await getAttributeData(page, dataId);
+    await page.goto(url, { waitUntil: 'networkidle2' });
 
-      insertInitialDataToDB(userid, loadid, url);
+    const loadid = await getAttributeData(page, dataId);
+
+    insertInitialDataToDB(userid, loadid, url);
 
     await browser.close();
   } catch (err) {
@@ -141,6 +141,5 @@ bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
-monitoring();
-
+setInterval(monitoring, 20000);
 
