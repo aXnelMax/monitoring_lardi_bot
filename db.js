@@ -53,12 +53,12 @@ export function getUrls(userid) {
     return urls;
 }
 
-export async function monitoring() {
+export function monitoring() {
     let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
     let deleteQuery = `DELETE FROM loads`;
     db.run(deleteQuery);
     console.log('Clearing database...');
-    await db.all(currentUserMonitoring, (err, rows) => {
+    db.all(currentUserMonitoring, (err, rows) => {
         if (err) return console.error(err.message);
         rows.forEach(row => {
             let links = `SELECT link FROM userlinks WHERE userid=${row.userid}`;
