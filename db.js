@@ -1,6 +1,6 @@
 import pkg from 'sqlite3';
 const { Database, OPENREADWRITE } = pkg;
-
+import { main } from './index.js';
 
 const dbFile = 'db.sqlite';
 
@@ -37,14 +37,23 @@ export function getUrls(userid) {
     let urls = [];
     db.each(q, (err, row) => {  
         if (err) return console.error(err.message);
-         urls = selectLinks(urls, row.link);
+         //callback(?);
     });
-    console.log(urls);
     return urls;
 }
 
-
-function selectLinks(links, link) {
-    links.push(link);
-    return links;
-}
+export function monitoring() {
+    let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
+    db.all(currentUserMonitoring, (err, rows) => {
+        if (err) return console.error(err.message);
+        rows.forEach(row => {
+            let links = `SELECT link FROM userlinks WHERE userid=${row.userid}`;
+            db.all(links, (err, rows) => {
+                if (err) return console.error(err.message);
+                rows.forEach(row => {
+                    main(row.link);
+                });
+            });
+        });
+    });
+  }
