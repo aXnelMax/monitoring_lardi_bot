@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import express from 'express';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB, initialPrepareDB } from './db.js';
+import { insertDataToDB, initialPrepareDB, updateMonitoring, getUrls } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
 const app = express();
@@ -121,15 +121,19 @@ async function getInitialLoadsIds(url) {
 
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
+  getUrls(ctx.chat.id);
 });
 
 bot.hears('Начать мониторинг', (ctx) => {
-  getInitialLoadsIds(url);
-  
+  updateMonitoring(ctx.chat.id, 1);
   ctx.reply('Мониторинг начат');
 });
 
-bot.hears('Остановить мониторинг', (ctx) => ctx.reply('Мониторинг остановлен'));
+bot.hears('Остановить мониторинг', (ctx) => {
+  updateMonitoring(ctx.chat.id, 0);
+  ctx.reply('Мониторинг остановлен')
+});
+
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 
 bot.launch();

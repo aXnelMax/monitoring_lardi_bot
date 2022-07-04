@@ -26,3 +26,25 @@ export function initialPrepareDB(userid, loadid, link) {
         db.run(q);
     }
 }
+
+export function updateMonitoring(userid, isMonitoring) {
+    let q = `UPDATE usermonitoring SET isMonitoring=${isMonitoring} WHERE userid='${userid}'`;
+    db.run(q);
+}
+
+export function getUrls(userid) {
+    let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
+    let urls = [];
+    db.each(q, (err, row) => {  
+        if (err) return console.error(err.message);
+         urls = selectLinks(urls, row.link);
+    });
+    console.log(urls);
+    return urls;
+}
+
+
+function selectLinks(links, link) {
+    links.push(link);
+    return links;
+}
