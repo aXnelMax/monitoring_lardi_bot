@@ -1,6 +1,6 @@
 import pkg from 'sqlite3';
 const { Database, OPENREADWRITE } = pkg;
-import { main } from './index.js';
+import { main, getInitialLoadsIds } from './index.js';
 
 const dbFile = 'db.sqlite';
 
@@ -18,14 +18,25 @@ export function insertDataToDB(userid, loadid, direction, loadDate, trasportType
     db.run(q);
 }
 
-export function initialPrepareDB(userid, loadid, link) {
-    let deleteQuery = `DELETE FROM currentloads`;
+export function initialLoads(userid) {
+    let deleteQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
     db.run(deleteQuery);
+    let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
+    db.all(q, [], (err, rows) => {
+        if (err) return console.error(err.message);
+        rows.forEach(row => {
+            getInitialLoadsIds(userid, row.link);
+        });
+    });
+}
+
+export function insertInitialDataToDB(userid, loadid, link) {
     for (let i = 0; i < loadid.length; i++) {
-        let q = `INSERT INTO currentloads (userid, loadid, link) VALUES (${userid}, ${loadid[i]}, '${String(link)}')`;
+        let q = `INSERT INTO initialloads (userid, loadid, link) VALUES (${userid}, ${loadid[i]}, '${String(link)}')`;
         db.run(q);
     }
 }
+
 
 export function updateMonitoring(userid, isMonitoring) {
     let q = `UPDATE usermonitoring SET isMonitoring=${isMonitoring} WHERE userid='${userid}'`;
@@ -35,9 +46,9 @@ export function updateMonitoring(userid, isMonitoring) {
 export function getUrls(userid) {
     let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
     let urls = [];
-    db.each(q, (err, row) => {  
+    db.each(q, (err, row) => {
         if (err) return console.error(err.message);
-         //callback(?);
+        //callback(?);
     });
     return urls;
 }
@@ -56,4 +67,4 @@ export function monitoring() {
             });
         });
     });
-  }
+}

@@ -9,5 +9,6 @@
 --CREATE TABLE loadsforcompare (userid INT, loadid BIGINT, link VARCHAR(1024)); 
 --CREATE TABLE usermonitoring (userid INT, isMonitoring BOOLEAN);
 --INSERT INTO usermonitoring (userid, isMonitoring) VALUES (478243252, 1);
---DROP TABLE usermonitoring;
+--DROP TABLE initialloads;
+--CREATE TABLE initialloads (userid INT, loadid BIGINT, link VARCHAR(1024)); 
 --UPDATE usermonitoring SET isMonitoring=0 WHERE userid='478243252'

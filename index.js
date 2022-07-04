@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import express from 'express';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB, initialPrepareDB, updateMonitoring, getUrls, monitoring } from './db.js';
+import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
 const app = express();
@@ -90,7 +90,7 @@ export async function main(url) {
 
     for (let i = 0; i < loadDate.length; i++) {
       insertDataToDB(userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
-      console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
+      //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
 
 
@@ -101,17 +101,18 @@ export async function main(url) {
 };
 
 
-async function getInitialLoadsIds(url) {
+export async function getInitialLoadsIds(userid, url) {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    const loadid = await getAttributeData(page, dataId);
-
-    initialPrepareDB(userId, loadid, url);
     
+      await page.goto(url, { waitUntil: 'networkidle2' });
+
+      const loadid = await getAttributeData(page, dataId);
+
+      insertInitialDataToDB(userid, loadid, url);
+
     await browser.close();
   } catch (err) {
     console.error(err);
@@ -121,12 +122,12 @@ async function getInitialLoadsIds(url) {
 
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
-  
+
 });
 
 bot.hears('Начать мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 1);
-  monitoring();
+  initialLoads(ctx.chat.id);
   ctx.reply('Мониторинг начат');
 });
 
@@ -140,7 +141,6 @@ bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
-//main(url);
-
+monitoring();
 
 
