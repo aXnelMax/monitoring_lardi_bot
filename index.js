@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import express from 'express';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads } from './db.js';
+import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads, db } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
 const app = express();
@@ -88,7 +88,7 @@ export async function main(url) {
     const cargo = await getCargoData(page, cargoSelector);
     const loadid = await getAttributeData(page, dataId);
 
-    for (let i = 0; i < loadDate.length; i++) {
+    for (let i = 0; i < loadid.length; i++) {
       insertDataToDB(userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
       //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
@@ -139,16 +139,15 @@ bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
-setInterval(monitoring, 20000);
+setInterval(monitoring, 120000);
 
 export function compareLoads() {
   return new Promise((resolve, reject) => {
-    let loads = `SELECT loads.loadid, loads.userid FROM initialloads, loads WHERE loads.userid<>initialloads.userid`;
-    console.log(loads);
+    let loads = `SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads`;
     db.all(loads, [], (err, rows) => {
       if (err) return console.error(err.message);
       rows.forEach(row => {
-        bot.telegram.sendMessage(row.userid, row.loadid);
+        bot.telegram.sendMessage(row.userid, 'Пес' + row.loadid);
       });
     });
   });

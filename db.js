@@ -4,7 +4,7 @@ import { main, getInitialLoadsIds, compareLoads } from './index.js';
 
 const dbFile = 'db.sqlite';
 
-const db = new Database(dbFile, OPENREADWRITE, (err) => {
+export const db = new Database(dbFile, OPENREADWRITE, (err) => {
     if (err) {
         console.log('Could not connect to database', err);
     } else {
