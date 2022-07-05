@@ -13,3 +13,5 @@
 --DROP TABLE initialloads;
 --CREATE TABLE initialloads (userid INT, loadid BIGINT, link VARCHAR(1024)); 
 --UPDATE usermonitoring SET isMonitoring=0 WHERE userid='478243252'
+--SELECT loads.loadid FROM initialloads, loads WHERE loads.userid=initialloads.userid;
+--UPDATE TABLE initialloads; 

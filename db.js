@@ -1,6 +1,6 @@
 import pkg from 'sqlite3';
 const { Database, OPENREADWRITE } = pkg;
-import { main, getInitialLoadsIds } from './index.js';
+import { main, getInitialLoadsIds, compareLoads } from './index.js';
 
 const dbFile = 'db.sqlite';
 
@@ -19,9 +19,8 @@ export async function insertDataToDB(userid, loadid, direction, loadDate, traspo
 }
 
 export async function initialLoads(userid) {
-
-    //let deleteQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
-    //db.run(deleteQuery);
+    let deleteQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
+    db.run(deleteQuery);
     let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
     db.all(q, [], (err, rows) => {
         if (err) return console.error(err.message);
@@ -54,26 +53,25 @@ export function getUrls(userid) {
     return urls;
 }
 
-export function monitoring() {
-    let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
-    let deleteQuery = `DELETE FROM loads`;
-    db.run(deleteQuery);
-    console.log('Clearing database...');
-    db.all(currentUserMonitoring, (err, rows) => {
-        if (err) return console.error(err.message);
-        rows.forEach(row => {
-            let links = `SELECT * FROM userlinks WHERE userid=${row.userid}`;
-            db.all(links, (err, rows) => {
-                if (err) return console.error(err.message);
-                rows.forEach(row => {
-                    //main(row.link).then(() => initialLoads(row.userid)).then(result => console.log('Database is updated...'));
-                    main(row.link);
+export const monitoring = function () {
+    return new Promise((resolve, reject) => {
+        let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
+        let deleteQuery = `DELETE FROM loads`;
+        db.run(deleteQuery);
+        console.log('Clearing database...');
+        db.all(currentUserMonitoring, (err, rows) => {
+            if (err) return console.error(err.message);
+            rows.forEach(row => {
+                let links = `SELECT * FROM userlinks WHERE userid=${row.userid}`;
+                db.all(links, [], (err, rows) => {
+                    if (err) return console.error(err.message);
+                    rows.forEach(row => {
+                        main(row.link).then(() => compareLoads()).then(result => console.log('Database is updated...')).catch(() => console.log('failed'));
+                        //main(row.link);
+                    });
                 });
             });
         });
     });
 }
 
-function compareloads(userid) {
-    let loads = `SELECT loadid FROM initialloads EXCEPT SELECT loadid FROM loads;`;
-}

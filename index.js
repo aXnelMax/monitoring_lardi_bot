@@ -111,7 +111,7 @@ export async function getInitialLoadsIds(userid, url) {
     const loadid = await getAttributeData(page, dataId);
     insertInitialDataToDB(userid, loadid, url);
     await browser.close();
-    
+
   } catch (err) {
     console.error(err);
   }
@@ -139,5 +139,17 @@ bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
-setInterval(monitoring, 30000);
+setInterval(monitoring, 20000);
 
+export function compareLoads() {
+  return new Promise((resolve, reject) => {
+    let loads = `SELECT loads.loadid, loads.userid FROM initialloads, loads WHERE loads.userid<>initialloads.userid`;
+    console.log(loads);
+    db.all(loads, [], (err, rows) => {
+      if (err) return console.error(err.message);
+      rows.forEach(row => {
+        bot.telegram.sendMessage(row.userid, row.loadid);
+      });
+    });
+  });
+}
