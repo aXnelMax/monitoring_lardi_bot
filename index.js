@@ -93,8 +93,8 @@ export async function main(url) {
       //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
 
-
     await browser.close();
+
   } catch (err) {
     console.error(err);
   }
@@ -106,14 +106,12 @@ export async function getInitialLoadsIds(userid, url) {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
 
-
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const loadid = await getAttributeData(page, dataId);
-
     insertInitialDataToDB(userid, loadid, url);
-
     await browser.close();
+    
   } catch (err) {
     console.error(err);
   }
@@ -141,5 +139,5 @@ bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
-setInterval(monitoring, 20000);
+setInterval(monitoring, 30000);
 

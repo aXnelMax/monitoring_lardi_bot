@@ -12,15 +12,16 @@ const db = new Database(dbFile, OPENREADWRITE, (err) => {
     }
 });
 
-export function insertDataToDB(userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
+export async function insertDataToDB(userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
     let q = `INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
         `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}")`;
     db.run(q);
 }
 
-export function initialLoads(userid) {
-    let deleteQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
-    db.run(deleteQuery);
+export async function initialLoads(userid) {
+
+    //let deleteQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
+    //db.run(deleteQuery);
     let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
     db.all(q, [], (err, rows) => {
         if (err) return console.error(err.message);
@@ -61,14 +62,18 @@ export function monitoring() {
     db.all(currentUserMonitoring, (err, rows) => {
         if (err) return console.error(err.message);
         rows.forEach(row => {
-            let links = `SELECT link FROM userlinks WHERE userid=${row.userid}`;
+            let links = `SELECT * FROM userlinks WHERE userid=${row.userid}`;
             db.all(links, (err, rows) => {
                 if (err) return console.error(err.message);
                 rows.forEach(row => {
+                    //main(row.link).then(() => initialLoads(row.userid)).then(result => console.log('Database is updated...'));
                     main(row.link);
                 });
             });
         });
     });
-    console.log('Database is updated...');
+}
+
+function compareloads(userid) {
+    let loads = `SELECT loadid FROM initialloads EXCEPT SELECT loadid FROM loads;`;
 }

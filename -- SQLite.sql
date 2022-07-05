@@ -3,6 +3,7 @@
 --INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) VALUES (1,1,1,1,1,1,1,1,1,1);
 --SELECT * FROM loads;
 --DELETE FROM loads;
+--DELETE FROM initialloads;
 --CREATE TABLE userlinks (userid INT, link VARCHAR(1024));
 --INSERT INTO userlinks (userid, link) VALUES (478243252, 'https://lardi-trans.ua/gruz/0c640a21h640e27q1y1.html');
 --CREATE TABLE currentloads (userid INT, loadid BIGINT, link VARCHAR(1024));
