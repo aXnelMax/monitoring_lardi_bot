@@ -12,8 +12,8 @@ export const db = new Database(dbFile, OPENREADWRITE, (err) => {
     }
 });
 
-export async function insertDataToDB(userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
-    let q = `INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
+export async function insertDataToDB(tablename, userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
+    let q = `INSERT INTO ${tablename} (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
         `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}")`;
     db.run(q);
 }
@@ -42,7 +42,7 @@ export function updateMonitoring(userid, isMonitoring) {
     db.run(q);
 }
 
-export const monitoring = function () {
+export const monitoring = function (tablename) {
     return new Promise((resolve, reject) => {
         let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
         let deleteQuery = `DELETE FROM loads`;
@@ -55,8 +55,8 @@ export const monitoring = function () {
                 db.all(links, [], (err, rows) => {
                     if (err) return console.error(err.message);
                     rows.forEach(row => {
-                        main(row.link).then(() => compareLoads()).then(result => console.log('Database is updated...')).catch(() => console.log('failed'));
-                        //main(row.link);
+                        //main( row.link).then(() => compareLoads()).then(result => console.log('Database is updated...')).catch(() => console.log('failed'));
+                        main(tablename, row.link);
                     });
                 });
             });

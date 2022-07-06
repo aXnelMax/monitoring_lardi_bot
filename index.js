@@ -1,12 +1,9 @@
 import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
-import express from 'express';
 import { Telegraf } from 'telegraf';
 import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads, db } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
-const app = express();
-const PORT = 3000;
 const bot = new Telegraf(process.env.botKEY);
 
 //Selectors
@@ -67,7 +64,7 @@ function clearLoadDate(data) {
   }
   return data;
 }
-export async function main(url) {
+export async function main(url, tablename) {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
@@ -86,7 +83,7 @@ export async function main(url) {
     const loadid = await getAttributeData(page, dataId);
 
     for (let i = 0; i < loadid.length; i++) {
-      insertDataToDB(userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
+      insertDataToDB(tablename, userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
       //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
 
@@ -143,6 +140,5 @@ bot.hears('Остановить мониторинг', (ctx) => {
 
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
-app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
 setInterval(monitoring, 120000);
