@@ -30,27 +30,16 @@ export async function initialLoads(userid) {
     });
 }
 
-export function insertInitialDataToDB(userid, loadid, link) {
+export function insertInitialDataToDB(userid, loadid, link) { // rewrite needed
     for (let i = 0; i < loadid.length; i++) {
         let q = `INSERT INTO initialloads (userid, loadid, link) VALUES (${userid}, ${loadid[i]}, '${String(link)}')`;
         db.run(q);
     }
 }
 
-
 export function updateMonitoring(userid, isMonitoring) {
     let q = `UPDATE usermonitoring SET isMonitoring=${isMonitoring} WHERE userid='${userid}'`;
     db.run(q);
-}
-
-export function getUrls(userid) {
-    let q = `SELECT link FROM userlinks WHERE userid='${userid}'`;
-    let urls = [];
-    db.each(q, (err, row) => {
-        if (err) return console.error(err.message);
-        //callback(?);
-    });
-    return urls;
 }
 
 export const monitoring = function () {

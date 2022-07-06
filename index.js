@@ -9,9 +9,6 @@ const app = express();
 const PORT = 3000;
 const bot = new Telegraf(process.env.botKEY);
 
-const url = 'https://lardi-trans.com/gruz/c640r10h640j6q1y1.html';
-const userId = 478243252;
-
 //Selectors
 const directionSelector = '.ps_data_direction';
 const loadDateSelector = '.ps_data_load_date__mobile-info > span';
@@ -117,10 +114,20 @@ export async function getInitialLoadsIds(userid, url) {
   }
 };
 
+export function compareLoads() {
+  return new Promise((resolve, reject) => {
+    let loads = `SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads`;
+    db.all(loads, [], (err, rows) => {
+      if (err) return console.error(err.message);
+      rows.forEach(row => {
+        bot.telegram.sendMessage(row.userid, 'Пес' + row.loadid);
+      });
+    });
+  });
+}
 
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
-
 });
 
 bot.hears('Начать мониторинг', (ctx) => {
@@ -135,20 +142,7 @@ bot.hears('Остановить мониторинг', (ctx) => {
 });
 
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
-
 bot.launch();
 app.listen(PORT, () => console.log(`My server is running on port ${PORT}`));
 
 setInterval(monitoring, 120000);
-
-export function compareLoads() {
-  return new Promise((resolve, reject) => {
-    let loads = `SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads`;
-    db.all(loads, [], (err, rows) => {
-      if (err) return console.error(err.message);
-      rows.forEach(row => {
-        bot.telegram.sendMessage(row.userid, 'Пес' + row.loadid);
-      });
-    });
-  });
-}
