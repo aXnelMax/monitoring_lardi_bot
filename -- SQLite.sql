@@ -1,9 +1,9 @@
 -- SQLite
---CREATE TABLE loads (userid INT, loadid BIGINT, direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512));
+--CREATE TABLE initialloads (userid INT, loadid BIGINT, direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512));
 --INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) VALUES (1,1,1,1,1,1,1,1,1,1);
 --SELECT * FROM loads;
 --DELETE FROM loads;
---DELETE FROM initialloads;
+--DROP TABLE initialloads;
 --CREATE TABLE userlinks (userid INT, link VARCHAR(1024));
 --INSERT INTO userlinks (userid, link) VALUES (478243252, 'https://lardi-trans.com/gruz/c640h640q1y1.html');
 --CREATE TABLE currentloads (userid INT, loadid BIGINT, link VARCHAR(1024));
@@ -17,4 +17,4 @@
 --UPDATE TABLE initialloads; 
 --SELECT loads.loadid FROM initialloads, loads WHERE loads.loadid!=initialloads.loadid
 --SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads
-SELECT userid, loadid FROM initialloads EXCEPT SELECT userid, loadid FROM loads
+SELECT * FROM loads EXCEPT SELECT * FROM initialloads

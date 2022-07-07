@@ -12,10 +12,13 @@ export const db = new Database(dbFile, OPENREADWRITE, (err) => {
     }
 });
 
-export async function insertDataToDB(tablename, userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
+export function insertDataToDB(tablename, userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
+
     let q = `INSERT INTO ${tablename} (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
         `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}")`;
     db.run(q);
+    resolve('Data inserted...');
+
 }
 
 export async function initialLoads(userid) {
@@ -42,12 +45,12 @@ export function updateMonitoring(userid, isMonitoring) {
     db.run(q);
 }
 
-export const monitoring = function (tablename) {
-    return new Promise((resolve, reject) => {
+export function monitoring(tablename) {
+    return new Promise(() => {
+        clearingLoadsTable(tablename);
+
         let currentUserMonitoring = `SELECT userid FROM usermonitoring WHERE isMonitoring=1`;
-        let deleteQuery = `DELETE FROM loads`;
-        db.run(deleteQuery);
-        console.log('Clearing database...');
+
         db.all(currentUserMonitoring, (err, rows) => {
             if (err) return console.error(err.message);
             rows.forEach(row => {
@@ -56,7 +59,7 @@ export const monitoring = function (tablename) {
                     if (err) return console.error(err.message);
                     rows.forEach(row => {
                         //main( row.link).then(() => compareLoads()).then(result => console.log('Database is updated...')).catch(() => console.log('failed'));
-                        main(tablename, row.link);
+                        main(row.link, tablename, row.userid);
                     });
                 });
             });
@@ -64,3 +67,8 @@ export const monitoring = function (tablename) {
     });
 }
 
+function clearingLoadsTable(tablename) {
+    let query = `DELETE FROM ${tablename}`;
+    db.run(query);
+    console.log('Clearing database...');
+}

@@ -64,11 +64,12 @@ function clearLoadDate(data) {
   }
   return data;
 }
-export async function main(url, tablename) {
+
+export async function main(url, tablename, userid) {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
-
+    let data = [];
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const direction = await getData(page, directionSelector);
@@ -83,11 +84,28 @@ export async function main(url, tablename) {
     const loadid = await getAttributeData(page, dataId);
 
     for (let i = 0; i < loadid.length; i++) {
-      insertDataToDB(tablename, userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
+      let obj = {
+        'tablename': tablename,
+        'userid': userid,
+        'loadid': loadid[i],
+        'direction': direction[i],
+        'loadDate': loadDate[i],
+        'trasportType': trasportType[i],
+        'fromTown': fromTown[i],
+        'whereTown': whereTown[i],
+        'paymentInfo': paymentInfo[i],
+        'paymentDetails': paymentDetails[i],
+        'cargo': cargo[i],
+      };
+
+      data.push(obj);
+      //insertDataToDB(tablename, userid, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
       //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
 
     await browser.close();
+
+    return data;
 
   } catch (err) {
     console.error(err);
@@ -111,16 +129,37 @@ export async function getInitialLoadsIds(userid, url) {
   }
 };
 
-export function compareLoads() {
+//export function compareLoads() {
+// let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
+// db.all(loads, [], (err, rows) => {
+
+//   if (err) return console.error(err.message);
+
+//   rows.forEach(row => {
+//     bot.telegram.sendMessage(row.userid, '' + row.fromTown + "-" + row.whereTown);
+//   });
+// });
+
+export const compareLoads = (command, method = 'all') => {
   return new Promise((resolve, reject) => {
-    let loads = `SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads`;
-    db.all(loads, [], (err, rows) => {
-      if (err) return console.error(err.message);
-      rows.forEach(row => {
-        bot.telegram.sendMessage(row.userid, 'Пес' + row.loadid);
-      });
+    db[method](command, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
     });
   });
+};
+//}
+
+async function get() {
+  let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
+  await monitoring('loads');
+  let data = await compareLoads(loads);
+  console.log(data);
+  bot.telegram.sendMessage(478243252, data[0].fromTown + "-" + data[0].whereTown);
+  return data;
 }
 
 bot.start(ctx => {
@@ -129,7 +168,7 @@ bot.start(ctx => {
 
 bot.hears('Начать мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 1);
-  initialLoads(ctx.chat.id);
+  get();
   ctx.reply('Мониторинг начат');
 });
 
@@ -141,4 +180,6 @@ bot.hears('Остановить мониторинг', (ctx) => {
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 
-setInterval(monitoring, 120000);
+//setInterval(() => monitoring('loads').then((res) => compareLoads()), 60000);
+
+setInterval(() => monitoring('loads'), 10000);
