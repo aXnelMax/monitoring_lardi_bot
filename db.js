@@ -1,6 +1,6 @@
 import pkg from 'sqlite3';
 const { Database, OPENREADWRITE } = pkg;
-import { main, getInitialLoadsIds, compareLoads } from './index.js';
+import { main, getInitialLoadsIds } from './index.js';
 
 const dbFile = 'db.sqlite';
 

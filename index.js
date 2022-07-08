@@ -140,7 +140,7 @@ export async function getInitialLoadsIds(userid, url) {
 //   });
 // });
 
-export const compareLoads = (command, method = 'all') => {
+export const query = (command, method = 'all') => {
   return new Promise((resolve, reject) => {
     db[method](command, (error, result) => {
       if (error) {
@@ -154,12 +154,26 @@ export const compareLoads = (command, method = 'all') => {
 //}
 
 async function get() {
-  let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
-  await monitoring('loads');
-  let data = await compareLoads(loads);
-  console.log(data);
-  bot.telegram.sendMessage(478243252, data[0].fromTown + "-" + data[0].whereTown);
-  return data;
+  //let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
+  let queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
+  let users = await query(queryUsers);
+  for (let i = 0; i < users.length; i++) {
+    let queryLinks = `SELECT * FROM userlinks WHERE userid=${users[i].userid}`;
+    let links = await query(queryLinks);
+    for (let j = 0; j < links.length; j++) {
+      let data = main(links[j].link, 'loads', users[i].userid);
+      console.log(data);
+    }
+  }
+
+
+
+  // let data = await query(loads);
+  // console.log(data);
+  // for (let i = 0; i < data.length; i++) {
+  //   bot.telegram.sendMessage(data[i].userid, data[i].userid + "-" + data[i].link);
+  // }
+  // return data;
 }
 
 bot.start(ctx => {
@@ -182,4 +196,4 @@ bot.launch();
 
 //setInterval(() => monitoring('loads').then((res) => compareLoads()), 60000);
 
-setInterval(() => monitoring('loads'), 10000);
+//setInterval(() => monitoring('loads'), 10000);
