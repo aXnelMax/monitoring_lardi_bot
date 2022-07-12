@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads, db } from './db.js';
+import { insertDataToDB, updateMonitoring, db } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
 const bot = new Telegraf(process.env.botKEY);
@@ -64,11 +64,12 @@ function clearLoadDate(data) {
   }
   return data;
 }
-export async function main(url, tablename) {
+
+export async function parseLinks(url, tablename, userid) {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
-
+    let data = [];
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const direction = await getData(page, directionSelector);
@@ -83,44 +84,102 @@ export async function main(url, tablename) {
     const loadid = await getAttributeData(page, dataId);
 
     for (let i = 0; i < loadid.length; i++) {
-      insertDataToDB(tablename, userId, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
-      //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
+      let obj = {
+        'tablename': tablename,
+        'userid': userid,
+        'loadid': loadid[i],
+        'direction': direction[i],
+        'loadDate': loadDate[i],
+        'trasportType': trasportType[i],
+        'fromTown': fromTown[i],
+        'whereTown': whereTown[i],
+        'paymentInfo': paymentInfo[i],
+        'paymentDetails': paymentDetails[i],
+        'cargo': cargo[i],
+      };
+      data.push(obj);
     }
 
     await browser.close();
 
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-
-export async function getInitialLoadsIds(userid, url) {
-  try {
-    const browser = await puppeteer.launch();
-    const [page] = await browser.pages();
-
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    const loadid = await getAttributeData(page, dataId);
-    insertInitialDataToDB(userid, loadid, url);
-    await browser.close();
+    return data;
 
   } catch (err) {
     console.error(err);
   }
 };
 
-export function compareLoads() {
+
+export const query = (command, method = 'all') => {
   return new Promise((resolve, reject) => {
-    let loads = `SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads`;
-    db.all(loads, [], (err, rows) => {
-      if (err) return console.error(err.message);
-      rows.forEach(row => {
-        bot.telegram.sendMessage(row.userid, 'Пес' + row.loadid);
-      });
+    db[method](command, (error, result) => {
+      if (error) {
+        reject(error);
+      } else {
+        resolve(result);
+      }
     });
   });
+};
+//}
+
+async function monitoring() {
+  const tablename = `loads`;
+  const clearDBQuery = `DELETE FROM loads`;
+  const queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
+
+  db.run(clearDBQuery);
+
+  let users = await query(queryUsers);
+  for (let i = 0; i < users.length; i++) {
+    const queryLinks = `SELECT * FROM userlinks WHERE userid=${users[i].userid}`;
+    let links = await query(queryLinks);
+    for (let j = 0; j < links.length; j++) {
+      let data = await parseLinks(links[j].link, tablename, users[i].userid);
+      for (let k = 0; k < data.length; k++) {
+        insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo);
+      }
+    }
+  }
+
+  let diffLoads = await compareLoads();
+  for (let i = 0; i < diffLoads.length; i++) {
+    setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails), 3050);
+  }
+
+  copyLoadsToInitialloads();
+
+}
+
+async function compareLoads() {
+  const compareQuery = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
+  let data = await query(compareQuery);
+  return data;
+}
+
+async function getInitalLoads(userid) {
+  const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
+  db.run(clearQuery);
+
+  const initialQuery = `SELECT link FROM userlinks WHERE userid='${userid}'`;
+  const tablename = 'initialloads';
+  let links = await query(initialQuery);
+
+  for (let i = 0; i < links.length; i++) {
+    let data = await parseLinks(links[i].link, tablename, userid);
+    for (let j = 0; j < data.length; j++) {
+      insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
+    }
+  }
+}
+
+function copyLoadsToInitialloads() {
+  const clearQuery = `DELETE FROM initialloads`;
+  db.run(clearQuery);
+
+  //const copyQuery = `SELECT * INTO initialloads FROM loads`;
+  const copyQuery = `INSERT INTO initialloads SELECT * FROM loads`;
+  db.run(copyQuery);
 }
 
 bot.start(ctx => {
@@ -129,7 +188,7 @@ bot.start(ctx => {
 
 bot.hears('Начать мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 1);
-  initialLoads(ctx.chat.id);
+  getInitalLoads(ctx.chat.id);
   ctx.reply('Мониторинг начат');
 });
 
@@ -141,4 +200,4 @@ bot.hears('Остановить мониторинг', (ctx) => {
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 
-setInterval(monitoring, 120000);
+setInterval(monitoring, 60000);
