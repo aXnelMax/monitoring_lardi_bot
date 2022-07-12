@@ -144,9 +144,11 @@ async function monitoring() {
 
   let diffLoads = await compareLoads();
   for (let i = 0; i < diffLoads.length; i++) {
-    setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].loadid + " " + diffLoads[i].direction + " " + diffLoads[i].loadDate + " " + diffLoads[i].trasportType + " " + diffLoads[i].fromTown + "-" + diffLoads[i].whereTown + " " + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + " " + diffLoads[i].cargo), 3050);
+    setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails), 3050);
   }
-  
+
+  copyLoadsToInitialloads();
+
 }
 
 async function compareLoads() {
@@ -156,6 +158,9 @@ async function compareLoads() {
 }
 
 async function getInitalLoads(userid) {
+  const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
+  db.run(clearQuery);
+
   const initialQuery = `SELECT link FROM userlinks WHERE userid='${userid}'`;
   const tablename = 'initialloads';
   let links = await query(initialQuery);
@@ -166,6 +171,15 @@ async function getInitalLoads(userid) {
       insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
     }
   }
+}
+
+function copyLoadsToInitialloads() {
+  const clearQuery = `DELETE FROM initialloads`;
+  db.run(clearQuery);
+
+  //const copyQuery = `SELECT * INTO initialloads FROM loads`;
+  const copyQuery = `INSERT INTO initialloads SELECT * FROM loads`;
+  db.run(copyQuery);
 }
 
 bot.start(ctx => {
@@ -186,4 +200,4 @@ bot.hears('Остановить мониторинг', (ctx) => {
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 
-monitoring();
+setInterval(monitoring, 60000);
