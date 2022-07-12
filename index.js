@@ -1,7 +1,7 @@
 import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import { Telegraf } from 'telegraf';
-import { insertDataToDB, insertInitialDataToDB, updateMonitoring, monitoring, initialLoads, db } from './db.js';
+import { insertDataToDB, updateMonitoring, db } from './db.js';
 import { getMainMenu } from './botkeyboard.js';
 
 const bot = new Telegraf(process.env.botKEY);
@@ -65,7 +65,7 @@ function clearLoadDate(data) {
   return data;
 }
 
-export async function main(url, tablename, userid) {
+export async function parseLinks(url, tablename, userid) {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
@@ -97,10 +97,7 @@ export async function main(url, tablename, userid) {
         'paymentDetails': paymentDetails[i],
         'cargo': cargo[i],
       };
-
       data.push(obj);
-      //insertDataToDB(tablename, userid, loadid[i], direction[i], loadDate[i], trasportType[i], fromTown[i], whereTown[i], paymentInfo[i], paymentDetails[i], cargo[i]);
-      //console.log("id: " + loadid[i] + " dir: " + direction[i] + " loadDate: " + loadDate[i] + " from town: " + fromTown[i] + " to town: " + whereTown[i] + " trasport type: " + trasportType[i] + " cargo: " + cargo[i] + " payment: " + paymentInfo[i] + " " + paymentDetails[i]);
     }
 
     await browser.close();
@@ -112,33 +109,6 @@ export async function main(url, tablename, userid) {
   }
 };
 
-
-export async function getInitialLoadsIds(userid, url) {
-  try {
-    const browser = await puppeteer.launch();
-    const [page] = await browser.pages();
-
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
-    const loadid = await getAttributeData(page, dataId);
-    insertInitialDataToDB(userid, loadid, url);
-    await browser.close();
-
-  } catch (err) {
-    console.error(err);
-  }
-};
-
-//export function compareLoads() {
-// let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
-// db.all(loads, [], (err, rows) => {
-
-//   if (err) return console.error(err.message);
-
-//   rows.forEach(row => {
-//     bot.telegram.sendMessage(row.userid, '' + row.fromTown + "-" + row.whereTown);
-//   });
-// });
 
 export const query = (command, method = 'all') => {
   return new Promise((resolve, reject) => {
@@ -153,27 +123,49 @@ export const query = (command, method = 'all') => {
 };
 //}
 
-async function get() {
-  //let loads = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
-  let queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
+async function monitoring() {
+  const tablename = `loads`;
+  const clearDBQuery = `DELETE FROM loads`;
+  const queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
+
+  db.run(clearDBQuery);
+
   let users = await query(queryUsers);
   for (let i = 0; i < users.length; i++) {
-    let queryLinks = `SELECT * FROM userlinks WHERE userid=${users[i].userid}`;
+    const queryLinks = `SELECT * FROM userlinks WHERE userid=${users[i].userid}`;
     let links = await query(queryLinks);
     for (let j = 0; j < links.length; j++) {
-      let data = main(links[j].link, 'loads', users[i].userid);
-      console.log(data);
+      let data = await parseLinks(links[j].link, tablename, users[i].userid);
+      for (let k = 0; k < data.length; k++) {
+        insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo);
+      }
     }
   }
 
+  let diffLoads = await compareLoads();
+  for (let i = 0; i < diffLoads.length; i++) {
+    setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].loadid + " " + diffLoads[i].direction + " " + diffLoads[i].loadDate + " " + diffLoads[i].trasportType + " " + diffLoads[i].fromTown + "-" + diffLoads[i].whereTown + " " + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + " " + diffLoads[i].cargo), 3050);
+  }
+  
+}
 
+async function compareLoads() {
+  const compareQuery = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
+  let data = await query(compareQuery);
+  return data;
+}
 
-  // let data = await query(loads);
-  // console.log(data);
-  // for (let i = 0; i < data.length; i++) {
-  //   bot.telegram.sendMessage(data[i].userid, data[i].userid + "-" + data[i].link);
-  // }
-  // return data;
+async function getInitalLoads(userid) {
+  const initialQuery = `SELECT link FROM userlinks WHERE userid='${userid}'`;
+  const tablename = 'initialloads';
+  let links = await query(initialQuery);
+
+  for (let i = 0; i < links.length; i++) {
+    let data = await parseLinks(links[i].link, tablename, userid);
+    for (let j = 0; j < data.length; j++) {
+      insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
+    }
+  }
 }
 
 bot.start(ctx => {
@@ -182,7 +174,7 @@ bot.start(ctx => {
 
 bot.hears('Начать мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 1);
-  get();
+  getInitalLoads(ctx.chat.id);
   ctx.reply('Мониторинг начат');
 });
 
@@ -194,6 +186,4 @@ bot.hears('Остановить мониторинг', (ctx) => {
 bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
 bot.launch();
 
-//setInterval(() => monitoring('loads').then((res) => compareLoads()), 60000);
-
-//setInterval(() => monitoring('loads'), 10000);
+monitoring();
