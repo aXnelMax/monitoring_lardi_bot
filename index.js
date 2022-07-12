@@ -76,8 +76,8 @@ export async function parseLinks(url, tablename, userid) {
     let loadDate = await getData(page, loadDateSelector);
     loadDate = clearLoadDate(loadDate);
     const trasportType = await getData(page, trasportTypeSelector);
-    const fromTown = await getData(page, fromTownSelector);
-    const whereTown = await getData(page, whereTownSelector);
+    const fromTown = await getCargoData(page, fromTownSelector);
+    const whereTown = await getCargoData(page, whereTownSelector);
     const paymentInfo = await getData(page, paymentInfoSelector);
     const paymentDetails = await getData(page, paymentDetailsSelector);
     const cargo = await getCargoData(page, cargoSelector);
@@ -177,7 +177,6 @@ function copyLoadsToInitialloads() {
   const clearQuery = `DELETE FROM initialloads`;
   db.run(clearQuery);
 
-  //const copyQuery = `SELECT * INTO initialloads FROM loads`;
   const copyQuery = `INSERT INTO initialloads SELECT * FROM loads`;
   db.run(copyQuery);
 }
@@ -197,7 +196,13 @@ bot.hears('Остановить мониторинг', (ctx) => {
   ctx.reply('Мониторинг остановлен')
 });
 
-bot.on('text', (ctx) => ctx.reply('Неизвестная команда'));
+bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
+  let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
+  db.run(addQuery);
+  ctx.reply("Ссылка добавлена");
+});
+
+bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку'));
 bot.launch();
 
-setInterval(monitoring, 60000);
+setInterval(monitoring, 120000);
