@@ -4,6 +4,7 @@
 --SELECT * FROM loads;
 --DELETE FROM loads;
 --DROP TABLE initialloads;
+--DROP TABLE userlinks;
 --CREATE TABLE userlinks (userid INT, link VARCHAR(1024));
 --INSERT INTO userlinks (userid, link) VALUES (478243252, 'https://lardi-trans.com/gruz/c640h640q1y1.html');
 --CREATE TABLE currentloads (userid INT, loadid BIGINT, link VARCHAR(1024));

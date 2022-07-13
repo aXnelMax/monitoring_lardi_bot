@@ -9,8 +9,8 @@ export function getMainMenu() {
     ]).resize();
 }
 
-export function keyboardYesNO() {
+export function keyboardConfirm() {
     return Markup.inlineKeyboard([
         Markup.button.callback('Удалить', 'delete'),
-    ], {columns: 1});
+    ]);
 }

@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import { Telegraf } from 'telegraf';
 import { insertDataToDB, updateMonitoring, db } from './db.js';
-import { getMainMenu, keyboardYesNO } from './botkeyboard.js';
+import { getMainMenu, keyboardConfirm } from './botkeyboard.js';
 
 const bot = new Telegraf(process.env.botKEY);
 
@@ -71,14 +71,18 @@ export async function parseLinks(url, tablename, userid) {
     const [page] = await browser.pages();
     let data = [];
 
-    await page.goto('https://lardi-trans.com/ru/accounts/login/');
-    await page.waitForSelector('input[autocomplete="new-password"]');
-    await page.focus('input[autocomplete="new-password"]');
-    await page.keyboard.type(process.env.login);
-    await page.focus('input[autocomplete="on"]');
-    await page.keyboard.type(process.env.password);
-    await page.click('button[type="submit"]');
-    await new Promise(r => setTimeout(r, 5000));
+
+//temporary code for authorization. Need to rewrite in the future
+  //  await page.goto('https://lardi-trans.com/ru/accounts/login/');
+  // await page.waitForSelector('input[autocomplete="new-password"]');
+  //  await page.focus('input[autocomplete="new-password"]');
+  //  await page.keyboard.type(process.env.login);
+  //  await page.focus('input[autocomplete="on"]');
+  //  await page.keyboard.type(process.env.password);
+  //  await page.click('button[type="submit"]');
+  //  await new Promise(r => setTimeout(r, 5000));
+//temporary code for authorization. Need to rewrite in the future
+
 
     await page.goto(url, { waitUntil: 'networkidle2' });
 
@@ -92,9 +96,9 @@ export async function parseLinks(url, tablename, userid) {
     const paymentDetails = await getData(page, paymentDetailsSelector);
     const cargo = await getCargoData(page, cargoSelector);
     const loadid = await getAttributeData(page, dataId);
-    const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user')
-    p
-    for (let i = 0; i < phone.length; i++){
+    //const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user');
+    
+    for (let i = 0; i < phone.length; i++) {
       console.log(phone[i]);
     }
 
@@ -136,7 +140,6 @@ export const query = (command, method = 'all') => {
     });
   });
 };
-//}
 
 async function monitoring() {
   const tablename = `loads`;
@@ -203,25 +206,24 @@ bot.start(ctx => {
 bot.hears('Начать мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 1);
   getInitalLoads(ctx.chat.id);
-  ctx.reply('Мониторинг начат');
+  ctx.reply('Мониторинг начат', getMainMenu());
 });
 
 bot.hears('Остановить мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 0);
-  ctx.reply('Мониторинг остановлен');
+  ctx.reply('Мониторинг остановлен', getMainMenu());
 });
 
 
 bot.hears('Удалить направления', ctx => {
-  
   let sqlstr = `SELECT * FROM userlinks WHERE userid=${ctx.chat.id}`;
 
-    db.all(sqlstr, [], (err, rows) => {
-        if (err) return console.error(err.message);
-        rows.forEach(row => {
-            ctx.reply(row.link, keyboardYesNO());
-        });
+  db.all(sqlstr, [], (err, rows) => {
+    if (err) return console.error(err.message);
+    rows.forEach(row => {
+      ctx.reply(row.link, keyboardConfirm());
     });
+  });
 
 });
 
@@ -236,10 +238,11 @@ bot.action('delete', ctx => {
 bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
   let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
   db.run(addQuery);
-  ctx.reply("Ссылка добавлена");
+  ctx.reply('Ссылка добавлена', getMainMenu());
 });
 
-bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку'));
+bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку', getMainMenu()));
+
 bot.launch();
 
 setInterval(monitoring, 20000);
