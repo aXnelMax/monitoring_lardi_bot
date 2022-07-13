@@ -2,7 +2,7 @@ import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
 import { Telegraf } from 'telegraf';
 import { insertDataToDB, updateMonitoring, db } from './db.js';
-import { getMainMenu } from './botkeyboard.js';
+import { getMainMenu, keyboardYesNO } from './botkeyboard.js';
 
 const bot = new Telegraf(process.env.botKEY);
 
@@ -70,6 +70,16 @@ export async function parseLinks(url, tablename, userid) {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
     let data = [];
+
+    await page.goto('https://lardi-trans.com/ru/accounts/login/');
+    await page.waitForSelector('input[autocomplete="new-password"]');
+    await page.focus('input[autocomplete="new-password"]');
+    await page.keyboard.type(process.env.login);
+    await page.focus('input[autocomplete="on"]');
+    await page.keyboard.type(process.env.password);
+    await page.click('button[type="submit"]');
+    await new Promise(r => setTimeout(r, 5000));
+
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const direction = await getData(page, directionSelector);
@@ -82,6 +92,11 @@ export async function parseLinks(url, tablename, userid) {
     const paymentDetails = await getData(page, paymentDetailsSelector);
     const cargo = await getCargoData(page, cargoSelector);
     const loadid = await getAttributeData(page, dataId);
+    const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user')
+    p
+    for (let i = 0; i < phone.length; i++){
+      console.log(phone[i]);
+    }
 
     for (let i = 0; i < loadid.length; i++) {
       let obj = {
@@ -193,8 +208,30 @@ bot.hears('Начать мониторинг', (ctx) => {
 
 bot.hears('Остановить мониторинг', (ctx) => {
   updateMonitoring(ctx.chat.id, 0);
-  ctx.reply('Мониторинг остановлен')
+  ctx.reply('Мониторинг остановлен');
 });
+
+
+bot.hears('Удалить направления', ctx => {
+  
+  let sqlstr = `SELECT * FROM userlinks WHERE userid=${ctx.chat.id}`;
+
+    db.all(sqlstr, [], (err, rows) => {
+        if (err) return console.error(err.message);
+        rows.forEach(row => {
+            ctx.reply(row.link, keyboardYesNO());
+        });
+    });
+
+});
+
+bot.action('delete', ctx => {
+  const deleteLinkQuery = `DELETE FROM userlinks WHERE userid=${ctx.chat.id} AND link='${ctx.callbackQuery.message.text}'`;
+  db.run(deleteLinkQuery);
+  ctx.editMessageText('Направление удалено');
+});
+
+
 
 bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
   let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
@@ -205,4 +242,4 @@ bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
 bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку'));
 bot.launch();
 
-setInterval(monitoring, 120000);
+setInterval(monitoring, 20000);

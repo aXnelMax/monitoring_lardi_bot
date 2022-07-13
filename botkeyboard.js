@@ -8,3 +8,9 @@ export function getMainMenu() {
         ['Удалить направления']
     ]).resize();
 }
+
+export function keyboardYesNO() {
+    return Markup.inlineKeyboard([
+        Markup.button.callback('Удалить', 'delete'),
+    ], {columns: 1});
+}
