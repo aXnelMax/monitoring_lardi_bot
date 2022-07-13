@@ -10,6 +10,7 @@
 --CREATE TABLE loadsforcompare (userid INT, loadid BIGINT, link VARCHAR(1024)); 
 --CREATE TABLE usermonitoring (userid INT, isMonitoring BOOLEAN);
 --INSERT INTO usermonitoring (userid, isMonitoring) VALUES (478243252, 1);
+--DELETE FROM userlinks WHERE link='https://lardi-trans.com/gruz/c640a28h640e19.html';
 --DROP TABLE initialloads;
 --CREATE TABLE initialloads (userid INT, loadid BIGINT, link VARCHAR(1024)); 
 --UPDATE usermonitoring SET isMonitoring=0 WHERE userid='478243252'
@@ -17,4 +18,4 @@
 --UPDATE TABLE initialloads; 
 --SELECT loads.loadid FROM initialloads, loads WHERE loads.loadid!=initialloads.loadid
 --SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads
-SELECT * FROM loads EXCEPT SELECT * FROM initialloads
+--SELECT * FROM loads EXCEPT SELECT * FROM initialloads
