@@ -11,9 +11,9 @@ export const db = new Database(dbFile, OPENREADWRITE, (err) => {
     }
 });
 
-export function insertDataToDB(tablename, userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) {
-    let q = `INSERT INTO ${tablename} (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) ` +
-        `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}")`;
+export function insertDataToDB(tablename, userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo, contacts, isNew) {
+    let q = `INSERT INTO ${tablename} (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo, contacts, isNew) ` +
+        `VALUES (${userid}, ${loadid}, "${String(direction)}", "${String(loadDate)}", "${String(trasportType)}", "${String(fromTown)}", "${String(whereTown)}", "${String(paymentInfo)}", "${String(paymentDetails)}", "${String(cargo)}", "${String(contacts)}", ${isNew})`;
     db.run(q);
 }
 

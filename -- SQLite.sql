@@ -3,7 +3,12 @@
 --INSERT INTO loads (userid, loadid, direction, loadDate, trasportType, fromTown, whereTown, paymentInfo, paymentDetails, cargo) VALUES (1,1,1,1,1,1,1,1,1,1);
 --SELECT * FROM loads;
 --DELETE FROM loads;
+INSERT INTO usermonitoring (userid, isMonitoring) VALUES (1134471877, 0)
 --DROP TABLE initialloads;
+--DROP TABLE loads;
+--CREATE TABLE initialloads (userid INT, loadid BIGINT, direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
+--CREATE TABLE loads (userid INT, loadid BIGINT, direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
+
 --DROP TABLE userlinks;
 --CREATE TABLE userlinks (userid INT, link VARCHAR(1024));
 --INSERT INTO userlinks (userid, link) VALUES (478243252, 'https://lardi-trans.com/gruz/c640h640q1y1.html');

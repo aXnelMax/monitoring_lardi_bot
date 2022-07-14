@@ -13,11 +13,16 @@ const directionSelector = '.ps_data_direction';
 const loadDateSelector = '.ps_data_load_date__mobile-info > span';
 const trasportTypeSelector = '.ps_data_transport__mobile > span';
 const fromTownSelector = '.ps_data-from > ul > li > .ps_data_town';
-const whereTownSelector = '.ps_data-where > ul > li > .ps_data_town';
+const whereTownSelector = '.ps_data-where > ul';
 const cargoSelector = '.ps_data-cargo > div'; // e.textContent instead of e.innerHTML 
 const paymentInfoSelector = '.ps_data-payment > .ps_data_payment_info';
 const paymentDetailsSelector = '.ps_data-payment > .ps_data_payment_details';
 const dataId = '.ps_data_wrapper';
+const contactsSelector = '.ps_search-result_data-contacts > .ps_data_contacts > .ps_proposal_user';
+
+const newSelector = '.ps_direction_statuses > .ps_data_statuses > .ps_data_status__new';
+
+//document.querySelector('div[data-ps-id="238720619417"] > .ps_data_wrapper > .ps_data > div > .ps_direction_statuses > .ps_data_statuses > .ps_data_status__new'); NOT NULL
 
 //Selectors
 
@@ -60,12 +65,26 @@ async function getCargoData(page, selector) {
   return data;
 }
 
+async function getNewLoads(page, loadid) {
+  return page.evaluate((loadid) => {
+    return document.querySelector(`div[data-ps-id="${loadid}"] > .ps_data_wrapper > .ps_data > div > .ps_direction_statuses > .ps_data_statuses > .ps_data_status__new`);
+  }, loadid);
+}
+
 function clearLoadDate(data) {
   for (let i = 0; i < data.length; i++) {
     data[i] = data[i].replace(/&nbsp;/g, "").replace(/\r?\n/g, "");
   }
   return data;
 }
+
+function clearContactsData(data) {
+  for (let i = 0; i < data.length; i++) {
+    data[i] = data[i].replace(/\s\s+/g, ' ').replace(/Паспорт надежности/g, '').replace(/Положительные отзывы \d+/g, '').replace(/Отрицательные отзывы \d+/g, '').replace(/\s\s+/g, ' ').replace(/"/g, "");
+  }
+  return data;
+}
+
 async function getCookies() {
   try {
     const browser = await puppeteer.launch();
@@ -94,9 +113,11 @@ export async function parseLinks(url, tablename, userid) {
 
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
+
     for (let key in cookies) {
       await page.setCookie(cookies[key]);
     }
+
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const direction = await getData(page, directionSelector);
@@ -109,11 +130,18 @@ export async function parseLinks(url, tablename, userid) {
     const paymentDetails = await getData(page, paymentDetailsSelector);
     const cargo = await getCargoData(page, cargoSelector);
     const loadid = await getAttributeData(page, dataId);
-    const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user');
+    let contacts = await getCargoData(page, contactsSelector);
+    contacts = clearContactsData(contacts);
+    let isNew = [];
 
-    // for (let i = 0; i < phone.length; i++) {
-    //   console.log(phone[i]);
-    // }
+    for (let i = 0; i < loadid.length; i++) {
+      let t = await getNewLoads(page, loadid[i]);
+      if (t == null) {
+        isNew[i] = 0;
+      } else {
+        isNew[i] = 1;
+      }
+    }
 
     for (let i = 0; i < loadid.length; i++) {
       let obj = {
@@ -128,6 +156,8 @@ export async function parseLinks(url, tablename, userid) {
         'paymentInfo': paymentInfo[i],
         'paymentDetails': paymentDetails[i],
         'cargo': cargo[i],
+        'contacts': contacts[i],
+        'isNew': isNew[i],
       };
       data.push(obj);
     }
@@ -170,15 +200,19 @@ async function monitoring() {
     let links = await query(queryLinks);
     for (let j = 0; j < links.length; j++) {
       let data = await parseLinks(links[j].link, tablename, users[i].userid);
-      for (let k = 0; k < data.length; k++) {
-        insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo);
+      if (data) {
+        for (let k = 0; k < data.length; k++) {
+          insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo, data[k].contacts, data[k].isNew);
+        }
       }
     }
   }
 
   let diffLoads = await compareLoads();
   for (let i = 0; i < diffLoads.length; i++) {
-    setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails), 3050);
+    if (diffLoads[i].isNew == 1) {
+      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts), 3050);
+    }
   }
 
   copyLoadsToInitialloads();
@@ -193,7 +227,7 @@ async function compareLoads() {
 
 async function getInitalLoads(userid) {
 
-  cookies = getCookies();
+  cookies = await getCookies();
 
   const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
   db.run(clearQuery);
@@ -206,7 +240,7 @@ async function getInitalLoads(userid) {
     let data = await parseLinks(links[i].link, tablename, userid);
     if (data) {
       for (let j = 0; j < data.length; j++) {
-        insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
+        insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo, data[j].contacts, data[j].isNew);
       }
     }
   }
@@ -266,4 +300,4 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 
 bot.launch();
 
-setInterval(monitoring, 25000);
+setInterval(monitoring, 60000);
