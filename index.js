@@ -96,7 +96,7 @@ async function getCookies() {
     await page.focus('input[autocomplete="on"]');
     await page.keyboard.type(process.env.password);
     await page.click('button[type="submit"]');
-    await new Promise(r => setTimeout(r, 3000));
+    await new Promise(r => setTimeout(r, 5000));
     await page.goto('https://lardi-trans.com/');
     cookies = await page.cookies();
     await browser.close();
@@ -301,3 +301,4 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 bot.launch();
 
 setInterval(monitoring, 60000);
+cookies = getCookies();
