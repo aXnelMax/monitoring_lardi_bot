@@ -6,6 +6,8 @@ import { getMainMenu, keyboardConfirm } from './botkeyboard.js';
 
 const bot = new Telegraf(process.env.botKEY);
 
+let cookies = {};
+
 //Selectors
 const directionSelector = '.ps_data_direction';
 const loadDateSelector = '.ps_data_load_date__mobile-info > span';
@@ -64,26 +66,37 @@ function clearLoadDate(data) {
   }
   return data;
 }
-
-export async function parseLinks(url, tablename, userid) {
+async function getCookies() {
   try {
     const browser = await puppeteer.launch();
     const [page] = await browser.pages();
+    await page.goto('https://lardi-trans.com/ru/accounts/login/');
+    await page.waitForSelector('input[autocomplete="new-password"]');
+    await page.focus('input[autocomplete="new-password"]');
+    await page.keyboard.type(process.env.login);
+    await page.focus('input[autocomplete="on"]');
+    await page.keyboard.type(process.env.password);
+    await page.click('button[type="submit"]');
+    await new Promise(r => setTimeout(r, 3000));
+    await page.goto('https://lardi-trans.com/');
+    cookies = await page.cookies();
+    await browser.close();
+
+    return cookies;
+
+  } catch (err) {
+    console.error(err);
+  }
+}
+export async function parseLinks(url, tablename, userid) {
+  try {
     let data = [];
 
-
-//temporary code for authorization. Need to rewrite in the future
-  //  await page.goto('https://lardi-trans.com/ru/accounts/login/');
-  // await page.waitForSelector('input[autocomplete="new-password"]');
-  //  await page.focus('input[autocomplete="new-password"]');
-  //  await page.keyboard.type(process.env.login);
-  //  await page.focus('input[autocomplete="on"]');
-  //  await page.keyboard.type(process.env.password);
-  //  await page.click('button[type="submit"]');
-  //  await new Promise(r => setTimeout(r, 5000));
-//temporary code for authorization. Need to rewrite in the future
-
-
+    const browser = await puppeteer.launch();
+    const [page] = await browser.pages();
+    for (let key in cookies) {
+      await page.setCookie(cookies[key]);
+    }
     await page.goto(url, { waitUntil: 'networkidle2' });
 
     const direction = await getData(page, directionSelector);
@@ -96,11 +109,11 @@ export async function parseLinks(url, tablename, userid) {
     const paymentDetails = await getData(page, paymentDetailsSelector);
     const cargo = await getCargoData(page, cargoSelector);
     const loadid = await getAttributeData(page, dataId);
-    //const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user');
-    
-    for (let i = 0; i < phone.length; i++) {
-      console.log(phone[i]);
-    }
+    const phone = await getCargoData(page, '.ps_data_contacts > .ps_proposal_user');
+
+    // for (let i = 0; i < phone.length; i++) {
+    //   console.log(phone[i]);
+    // }
 
     for (let i = 0; i < loadid.length; i++) {
       let obj = {
@@ -142,6 +155,9 @@ export const query = (command, method = 'all') => {
 };
 
 async function monitoring() {
+
+  cookies = await getCookies();
+
   const tablename = `loads`;
   const clearDBQuery = `DELETE FROM loads`;
   const queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
@@ -176,6 +192,9 @@ async function compareLoads() {
 }
 
 async function getInitalLoads(userid) {
+
+  cookies = getCookies();
+
   const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
   db.run(clearQuery);
 
@@ -185,8 +204,10 @@ async function getInitalLoads(userid) {
 
   for (let i = 0; i < links.length; i++) {
     let data = await parseLinks(links[i].link, tablename, userid);
-    for (let j = 0; j < data.length; j++) {
-      insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
+    if (data) {
+      for (let j = 0; j < data.length; j++) {
+        insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo);
+      }
     }
   }
 }
@@ -245,4 +266,4 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 
 bot.launch();
 
-setInterval(monitoring, 20000);
+setInterval(monitoring, 25000);
