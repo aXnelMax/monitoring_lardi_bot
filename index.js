@@ -130,8 +130,8 @@ export async function parseLinks(url, tablename, userid) {
     let isNew = [];
 
     for (let i = 0; i < loadid.length; i++) {
-      let t = await getNewLoads(page, loadid[i]);
-      if (t == null) {
+      let isItNew = await getNewLoads(page, loadid[i]);
+      if (isItNew == null) {
         isNew[i] = 0;
       } else {
         isNew[i] = 1;
@@ -139,10 +139,14 @@ export async function parseLinks(url, tablename, userid) {
     }
 
     for (let i = 0; i < loadid.length; i++) {
+
+      let directLink = 'https://lardi-trans.com/gruz/view/' + loadid[i];
+
       let obj = {
         'tablename': tablename,
         'userid': userid,
         'loadid': loadid[i],
+        'directLink': directLink,
         'direction': direction[i],
         'loadDate': loadDate[i],
         'trasportType': trasportType[i],
@@ -197,7 +201,7 @@ async function monitoring() {
       let data = await parseLinks(links[j].link, tablename, users[i].userid);
       if (data) {
         for (let k = 0; k < data.length; k++) {
-          insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo, data[k].contacts, data[k].isNew);
+          insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].directLink, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo, data[k].contacts, data[k].isNew);
         }
       }
     }
@@ -206,7 +210,7 @@ async function monitoring() {
   let diffLoads = await compareLoads();
   for (let i = 0; i < diffLoads.length; i++) {
     if (diffLoads[i].isNew == 1) {
-      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts), 3050);
+      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + " " + "<a href=\"" + diffLoads[i].directLink + "\">Cсылка на Lardi</a>" + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts, { parse_mode: 'HTML', disable_web_page_preview: true }), 3050);
     }
   }
 
@@ -235,7 +239,7 @@ async function getInitalLoads(userid) {
     let data = await parseLinks(links[i].link, tablename, userid);
     if (data) {
       for (let j = 0; j < data.length; j++) {
-        insertDataToDB(tablename, userid, data[j].loadid, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo, data[j].contacts, data[j].isNew);
+        insertDataToDB(tablename, userid, data[j].loadid, data[j].directLink, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo, data[j].contacts, data[j].isNew);
       }
     }
   }
@@ -249,19 +253,6 @@ function copyLoadsToInitialloads() {
   db.run(copyQuery);
 }
 
-async function isAllowed(userid) {
-  const userQuery = `SELECT userid FROM usermonitoring WHERE userid=${userid}`;
-
-  let isUserExist = await query(userQuery, 'get');
-
-  console.log(isUserExist);
-  if (isUserExist !== undefined) {
-    return true;
-  }
-  return false;
-}
-
-
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
 });
@@ -273,9 +264,9 @@ bot.hears('Начать мониторинг', (ctx) => {
 });
 
 bot.hears('Остановить мониторинг', (ctx) => {
-    updateMonitoring(ctx.chat.id, 0);
-    ctx.reply('Мониторинг остановлен', getMainMenu());
-  }
+  updateMonitoring(ctx.chat.id, 0);
+  ctx.reply('Мониторинг остановлен', getMainMenu());
+}
 );
 
 
