@@ -12,18 +12,13 @@ let cookies = {};
 const directionSelector = '.ps_data_direction';
 const loadDateSelector = '.ps_data_load_date__mobile-info > span';
 const trasportTypeSelector = '.ps_data_transport__mobile > span';
-const fromTownSelector = '.ps_data-from > ul > li > .ps_data_town';
+const fromTownSelector = '.ps_data-from > ul';
 const whereTownSelector = '.ps_data-where > ul';
 const cargoSelector = '.ps_data-cargo > div'; // e.textContent instead of e.innerHTML 
 const paymentInfoSelector = '.ps_data-payment > .ps_data_payment_info';
 const paymentDetailsSelector = '.ps_data-payment > .ps_data_payment_details';
 const dataId = '.ps_data_wrapper';
 const contactsSelector = '.ps_search-result_data-contacts > .ps_data_contacts > .ps_proposal_user';
-
-const newSelector = '.ps_direction_statuses > .ps_data_statuses > .ps_data_status__new';
-
-//document.querySelector('div[data-ps-id="238720619417"] > .ps_data_wrapper > .ps_data > div > .ps_direction_statuses > .ps_data_statuses > .ps_data_status__new'); NOT NULL
-
 //Selectors
 
 async function getData(page, selector) {
@@ -254,6 +249,19 @@ function copyLoadsToInitialloads() {
   db.run(copyQuery);
 }
 
+async function isAllowed(userid) {
+  const userQuery = `SELECT userid FROM usermonitoring WHERE userid=${userid}`;
+
+  let isUserExist = await query(userQuery, 'get');
+
+  console.log(isUserExist);
+  if (isUserExist !== undefined) {
+    return true;
+  }
+  return false;
+}
+
+
 bot.start(ctx => {
   ctx.reply('Привет. Стартовый запуск', getMainMenu());
 });
@@ -265,9 +273,10 @@ bot.hears('Начать мониторинг', (ctx) => {
 });
 
 bot.hears('Остановить мониторинг', (ctx) => {
-  updateMonitoring(ctx.chat.id, 0);
-  ctx.reply('Мониторинг остановлен', getMainMenu());
-});
+    updateMonitoring(ctx.chat.id, 0);
+    ctx.reply('Мониторинг остановлен', getMainMenu());
+  }
+);
 
 
 bot.hears('Удалить направления', ctx => {
@@ -300,5 +309,5 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 
 bot.launch();
 
-setInterval(monitoring, 60000);
+setInterval(monitoring, 90000);
 cookies = getCookies();
