@@ -76,6 +76,15 @@ function clearLoadDate(data) {
 function clearContactsData(data) {
   for (let i = 0; i < data.length; i++) {
     data[i] = data[i].replace(/\s\s+/g, ' ').replace(/Паспорт надежности/g, '').replace(/Положительные отзывы \d+/g, '').replace(/Отрицательные отзывы \d+/g, '').replace(/\s\s+/g, ' ').replace(/"/g, "");
+    let phones = data[i].match(/\+380 \(\d+\) \d+-\d+-\d+/g);
+    if (phones) {
+      for (let j = 0; j < phones.length; j++){
+      phones[j] = phones[j].replace(/ /g, "").replace(/\-/g, "").replace(/\(/g,"").replace(/\)/g,"");
+      data[i] = data[i].replace(/\+380 \(\d+\) \d+-\d+-\d+/g, "");
+      data[i] = data[i] + " " + phones[j];
+      }
+    }
+
   }
   return data;
 }
