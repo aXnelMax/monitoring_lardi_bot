@@ -52,7 +52,7 @@ async function getCargoData(page, selector) {
     let elements = Array.from(document.querySelectorAll(selector));
     let data = elements.map((e) => {
       if (e !== null) {
-        return e.textContent.trim().replace(/\r?\n/g, " ");
+        return e.textContent.trim().replace(/\r?\n/g, " ").replace(/\"/g, " ");
       }
     });
     return data;
@@ -226,7 +226,17 @@ async function monitoring() {
   let diffLoads = await compareLoads();
   for (let i = 0; i < diffLoads.length; i++) {
     if (diffLoads[i].isNew == 1) {
-      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, diffLoads[i].direction + " " + "<a href=\"" + diffLoads[i].directLink + "\">Cсылка на Lardi</a>" + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts, { parse_mode: 'HTML', disable_web_page_preview: true }), 3050);
+
+      let linkType = diffLoads[i].directLink.match(/\/gruz\//g);
+      let reqType = '';
+
+      if (linkType == "/gruz/") {
+        reqType = "ГРУЗ";
+      } else {
+        reqType = "ТРАНСПОРТ";
+      }
+
+      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, reqType + " " + "<a href=\"" + diffLoads[i].directLink + "\">Cсылка на Lardi</a>" + "\n" + diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts, { parse_mode: 'HTML', disable_web_page_preview: true }), 3050);
     }
   }
 
