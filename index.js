@@ -78,10 +78,10 @@ function clearContactsData(data) {
     data[i] = data[i].replace(/\s\s+/g, ' ').replace(/Паспорт надежности/g, '').replace(/Положительные отзывы \d+/g, '').replace(/Отрицательные отзывы \d+/g, '').replace(/\s\s+/g, ' ').replace(/"/g, "");
     let phones = data[i].match(/\+380 \(\d+\) \d+-\d+-\d+/g);
     if (phones) {
-      for (let j = 0; j < phones.length; j++){
-      phones[j] = phones[j].replace(/ /g, "").replace(/\-/g, "").replace(/\(/g,"").replace(/\)/g,"");
-      data[i] = data[i].replace(/\+380 \(\d+\) \d+-\d+-\d+/g, "");
-      data[i] = data[i] + " " + phones[j];
+      for (let j = 0; j < phones.length; j++) {
+        phones[j] = phones[j].replace(/ /g, "").replace(/\-/g, "").replace(/\(/g, "").replace(/\)/g, "");
+        data[i] = data[i].replace(/\+380 \(\d+\) \d+-\d+-\d+/g, "");
+        data[i] = data[i] + " " + phones[j];
       }
     }
 
@@ -149,7 +149,14 @@ export async function parseLinks(url, tablename, userid) {
 
     for (let i = 0; i < loadid.length; i++) {
 
-      let directLink = 'https://lardi-trans.com/gruz/view/' + loadid[i];
+      let linkType = url.match(/\/gruz\//g);
+      let directLink = '';
+
+      if (linkType == '/gruz/') {
+        directLink = 'https://lardi-trans.com/gruz/view/' + loadid[i];
+      } else {
+        directLink = 'https://lardi-trans.com/trans/view/' + loadid[i];
+      }
 
       let obj = {
         'tablename': tablename,
@@ -305,9 +312,15 @@ bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
   ctx.reply('Ссылка добавлена', getMainMenu());
 });
 
+bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/trans\/\S+/g, (ctx) => {
+  let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
+  db.run(addQuery);
+  ctx.reply('Ссылка добавлена', getMainMenu());
+});
+
 bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку', getMainMenu()));
 
 bot.launch();
 
-setInterval(monitoring, 90000);
+setInterval(monitoring, 60000);
 cookies = getCookies();
