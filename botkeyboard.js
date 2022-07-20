@@ -14,3 +14,9 @@ export function keyboardConfirm() {
         Markup.button.callback('Удалить', 'delete'),
     ]);
 }
+
+export function adminMenu() {
+    return Markup.keyboard([
+        ['Список пользователей', 'Удалить пользователя']
+    ]).resize();
+}
