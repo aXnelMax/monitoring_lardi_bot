@@ -332,5 +332,5 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 
 bot.launch();
 
-setInterval(monitoring, 60000);
+setInterval(monitoring, 100000);
 cookies = getCookies();
