@@ -201,8 +201,6 @@ export const query = (command, method = 'all') => {
 
 async function monitoring() {
 
-  cookies = await getCookies();
-
   const tablename = `loads`;
   const clearDBQuery = `DELETE FROM loads`;
   const queryUsers = `SELECT * FROM usermonitoring WHERE isMonitoring=1`;
@@ -252,8 +250,6 @@ async function compareLoads() {
 
 async function getInitalLoads(userid) {
 
-  cookies = await getCookies();
-
   const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
   db.run(clearQuery);
 
@@ -277,6 +273,15 @@ function copyLoadsToInitialloads() {
 
   const copyQuery = `INSERT INTO initialloads SELECT * FROM loads`;
   db.run(copyQuery);
+}
+
+async function timeToGetCookies() {
+  let date = new Date();
+  
+  if (date.getHours() == 6 && date.getMinutes() == 0) {
+    cookies = await getCookies();
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+  }
 }
 
 bot.start(ctx => {
@@ -333,4 +338,5 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 bot.launch();
 
 setInterval(monitoring, 100000);
-cookies = getCookies();
+setInterval(timeToGetCookies, 35000);
+cookies = await getCookies();
