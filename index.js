@@ -277,8 +277,24 @@ function copyLoadsToInitialloads() {
 
 async function timeToGetCookies() {
   let date = new Date();
-  
+
   if (date.getHours() == 6 && date.getMinutes() == 0) {
+    cookies = await getCookies();
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+  }
+  if (date.getHours() == 9 && date.getMinutes() == 0) {
+    cookies = await getCookies();
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+  }
+  if (date.getHours() == 12 && date.getMinutes() == 0) {
+    cookies = await getCookies();
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+  }
+  if (date.getHours() == 15 && date.getMinutes() == 0) {
+    cookies = await getCookies();
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+  }
+  if (date.getHours() == 18 && date.getMinutes() == 0) {
     cookies = await getCookies();
     console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
   }
