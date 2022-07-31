@@ -61,9 +61,10 @@ async function getCargoData(page, selector) {
 }
 
 async function getNewLoads(page, loadid) {
-  return page.evaluate((loadid) => {
+  let data = page.evaluate((loadid) => {
     return document.querySelector(`div[data-ps-id="${loadid}"] > .ps_data_wrapper > .ps_data > div > .ps_direction_statuses > .ps_data_statuses > .ps_data_status__new`);
   }, loadid);
+  return data;
 }
 
 function clearLoadDate(data) {
@@ -249,12 +250,13 @@ async function compareLoads() {
 }
 
 async function getInitalLoads(userid) {
+  const tablename = 'initialloads';
 
   const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
   db.run(clearQuery);
 
   const initialQuery = `SELECT link FROM userlinks WHERE userid='${userid}'`;
-  const tablename = 'initialloads';
+ 
   let links = await query(initialQuery);
 
   for (let i = 0; i < links.length; i++) {
@@ -268,33 +270,16 @@ async function getInitalLoads(userid) {
 }
 
 function copyLoadsToInitialloads() {
-  const clearQuery = `DELETE FROM initialloads`;
-  db.run(clearQuery);
-
-  const copyQuery = `INSERT INTO initialloads SELECT * FROM loads`;
-  db.run(copyQuery);
+  db.serialize(() => {
+    db.run(`DELETE FROM initialloads`);
+    db.run(`INSERT INTO initialloads SELECT * FROM loads`);
+});
 }
 
 async function timeToGetCookies() {
   let date = new Date();
 
-  if (date.getHours() == 6 && date.getMinutes() == 0) {
-    cookies = await getCookies();
-    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
-  }
-  if (date.getHours() == 9 && date.getMinutes() == 0) {
-    cookies = await getCookies();
-    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
-  }
-  if (date.getHours() == 12 && date.getMinutes() == 0) {
-    cookies = await getCookies();
-    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
-  }
-  if (date.getHours() == 15 && date.getMinutes() == 0) {
-    cookies = await getCookies();
-    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
-  }
-  if (date.getHours() == 18 && date.getMinutes() == 0) {
+  if (date.getHours() > 6 &&  date.getHours() < 18 && date.getMinutes() == 0) {
     cookies = await getCookies();
     console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
   }
