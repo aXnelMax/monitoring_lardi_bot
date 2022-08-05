@@ -6,8 +6,8 @@
 --INSERT INTO usermonitoring (userid, isMonitoring) VALUES (0, 0)
 --DROP TABLE initialloads;
 --DROP TABLE loads;
---CREATE TABLE initialloads (userid INT, loadid BIGINT, directLink VARCHAR(512), direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
---CREATE TABLE loads (userid INT, loadid BIGINT, directLink VARCHAR(512), direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
+--CREATE TABLE initialloads (userid INT, loadid BIGINT, userlink VARCHAR(1024), directLink VARCHAR(512), direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
+--CREATE TABLE loads (userid INT, loadid BIGINT, userlink VARCHAR(1024), directLink VARCHAR(512), direction TINYTEXT, loadDate TINYTEXT, trasportType TINYTEXT, fromTown TINYTEXT, whereTown TINYTEXT, paymentInfo TINYTEXT, paymentDetails TINYTEXT, cargo VARCHAR(512), contacts VARCHAR(1024), isNew BOOLEAN);
 --DELETE FROM usermonitoring WHERE userid=478243252
 --DROP TABLE userlinks;
 --CREATE TABLE userlinks (userid INT, link VARCHAR(1024));
@@ -24,4 +24,3 @@
 --UPDATE TABLE initialloads; 
 --SELECT loads.loadid FROM initialloads, loads WHERE loads.loadid!=initialloads.loadid
 --SELECT userid, loadid FROM loads EXCEPT SELECT userid, loadid FROM initialloads
---SELECT * FROM loads EXCEPT SELECT * FROM initialloads

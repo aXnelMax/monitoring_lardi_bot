@@ -123,8 +123,8 @@ export async function parseLinks(url, tablename, userid) {
       await page.setCookie(cookies[key]);
     }
 
-    await page.goto(url, { waitUntil: 'networkidle2' });
-
+    let responce = await page.goto(url, { waitUntil: 'networkidle0' });
+    console.log(url + " : " + responce.status());
     const direction = await getData(page, directionSelector);
     let loadDate = await getData(page, loadDateSelector);
     loadDate = clearLoadDate(loadDate);
@@ -216,13 +216,18 @@ async function monitoring() {
       let data = await parseLinks(links[j].link, tablename, users[i].userid);
       if (data) {
         for (let k = 0; k < data.length; k++) {
-          insertDataToDB(tablename, data[k].userid, data[k].loadid, data[k].directLink, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo, data[k].contacts, data[k].isNew);
+          await insertDataToDB(tablename, data[k].userid, data[k].loadid, links[j].link, data[k].directLink, data[k].direction, data[k].loadDate, data[k].trasportType, data[k].fromTown, data[k].whereTown, data[k].paymentInfo, data[k].paymentDetails, data[k].cargo, data[k].contacts, data[k].isNew);
         }
       }
     }
   }
 
-  let diffLoads = await compareLoads();
+  console.log("========== " + new Date() + " =========");
+
+  compareLoads().then((diffLoads) => sendingToTG(diffLoads)).then(() => copyLoadsToInitialloads()).catch((err) => console.log("Catched error: " + err));
+}
+
+async function sendingToTG(diffLoads) {
   for (let i = 0; i < diffLoads.length; i++) {
     if (diffLoads[i].isNew == 1) {
 
@@ -235,17 +240,31 @@ async function monitoring() {
         reqType = "ТРАНСПОРТ";
       }
 
-      setTimeout(() => bot.telegram.sendMessage(diffLoads[i].userid, reqType + " " + "<a href=\"" + diffLoads[i].directLink + "\">Cсылка на Lardi</a>" + "\n" + diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts, { parse_mode: 'HTML', disable_web_page_preview: true }), 3050);
+      bot.telegram.sendMessage(diffLoads[i].userid, reqType + " " + "<a href=\"" + diffLoads[i].directLink + "\">Cсылка на Lardi</a>" + "\n" + diffLoads[i].direction + "\n" + diffLoads[i].fromTown + " - " + diffLoads[i].whereTown + "\n" + "Дата загрузки: " + diffLoads[i].loadDate + "\n" + diffLoads[i].trasportType + " " + diffLoads[i].cargo + "\n" + diffLoads[i].paymentInfo + " " + diffLoads[i].paymentDetails + "\n" + diffLoads[i].contacts, { parse_mode: 'HTML', disable_web_page_preview: true });
     }
   }
-
-  copyLoadsToInitialloads();
-
+  return 1;
 }
 
 async function compareLoads() {
-  const compareQuery = `SELECT * FROM loads EXCEPT SELECT * FROM initialloads`;
-  let data = await query(compareQuery);
+  const uniqLinks = `SELECT DISTINCT userlink FROM initialloads`;
+  let links = await query(uniqLinks);
+
+  let queryStr = `SELECT * FROM loads `;
+  if (links.length > 0) {
+    queryStr += ` WHERE `
+
+    for (let i = 0; i < links.length; i++) {
+      queryStr += ` userlink="${links[i].userlink}" `;
+      if (i != links.length - 1) {
+        queryStr += ` OR `;
+      }
+    }
+  }
+
+  queryStr += `EXCEPT SELECT * FROM initialloads`;
+
+  let data = await query(queryStr);
   return data;
 }
 
@@ -256,30 +275,30 @@ async function getInitalLoads(userid) {
   db.run(clearQuery);
 
   const initialQuery = `SELECT link FROM userlinks WHERE userid='${userid}'`;
- 
+
   let links = await query(initialQuery);
 
   for (let i = 0; i < links.length; i++) {
     let data = await parseLinks(links[i].link, tablename, userid);
     if (data) {
       for (let j = 0; j < data.length; j++) {
-        insertDataToDB(tablename, userid, data[j].loadid, data[j].directLink, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo, data[j].contacts, data[j].isNew);
+        insertDataToDB(tablename, userid, data[j].loadid, links[i].link, data[j].directLink, data[j].direction, data[j].loadDate, data[j].trasportType, data[j].fromTown, data[j].whereTown, data[j].paymentInfo, data[j].paymentDetails, data[j].cargo, data[j].contacts, data[j].isNew);
       }
     }
   }
 }
 
-function copyLoadsToInitialloads() {
+async function copyLoadsToInitialloads() {
   db.serialize(() => {
     db.run(`DELETE FROM initialloads`);
     db.run(`INSERT INTO initialloads SELECT * FROM loads`);
-});
+  });
 }
 
 async function timeToGetCookies() {
   let date = new Date();
 
-  if (date.getHours() > 6 &&  date.getHours() < 18 && date.getMinutes() == 0) {
+  if (date.getHours() > 6 && date.getHours() < 18 && date.getMinutes() == 0) {
     cookies = await getCookies();
     console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
   }
@@ -338,6 +357,6 @@ bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылк
 
 bot.launch();
 
-setInterval(monitoring, 100000);
+setInterval(monitoring, 60000);
 setInterval(timeToGetCookies, 35000);
 cookies = await getCookies();
