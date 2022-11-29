@@ -1,7 +1,10 @@
-import 'dotenv/config';
+﻿import 'dotenv/config';
 import * as puppeteer from 'puppeteer';
-import { insertDataToDB, db } from './db.js';
-import { bot } from './bot.js';
+import { Telegraf } from 'telegraf';
+import { insertDataToDB, updateMonitoring, db } from './db.js';
+import { getMainMenu, keyboardConfirm } from './botkeyboard.js';
+
+const bot = new Telegraf(process.env.botKEY);
 
 let cookies = {};
 
@@ -110,10 +113,11 @@ async function getCookies() {
   }
 }
 export async function parseLinks(url, tablename, userid) {
-  try {
+const browser = await puppeteer.launch();  
+try {
     let data = [];
 
-    const browser = await puppeteer.launch();
+    
     const [page] = await browser.pages();
 
     for (let key in cookies) {
@@ -121,7 +125,7 @@ export async function parseLinks(url, tablename, userid) {
     }
 
     let responce = await page.goto(url, { waitUntil: 'networkidle0' });
-    console.log(url + " : " + responce.status()); //for debugging
+    console.log(url + " : " + responce.status());
     const direction = await getData(page, directionSelector);
     let loadDate = await getData(page, loadDateSelector);
     loadDate = clearLoadDate(loadDate);
@@ -185,7 +189,8 @@ export async function parseLinks(url, tablename, userid) {
   }
 };
 
-const query = (command, method = 'all') => {
+
+export const query = (command, method = 'all') => {
   return new Promise((resolve, reject) => {
     db[method](command, (error, result) => {
       if (error) {
@@ -265,7 +270,7 @@ async function compareLoads() {
   return data;
 }
 
-export async function getInitalLoads(userid) {
+async function getInitalLoads(userid) {
   const tablename = 'initialloads';
 
   const clearQuery = `DELETE FROM initialloads WHERE userid='${userid}'`;
@@ -297,9 +302,60 @@ async function timeToGetCookies() {
 
   if (date.getHours() > 6 && date.getHours() < 18 && date.getMinutes() == 0) {
     cookies = await getCookies();
-    console.log('Cookies were updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
+    console.log('Cookies was updated. Current time is: ' + date.getHours() + ":" + date.getMinutes() + ":" + date.getSeconds() + " " + date.getDate() + "/" + (date.getMonth() + 1) + "/" + date.getFullYear());
   }
 }
+
+bot.start(ctx => {
+  ctx.reply('Привет. Стартовый запуск', getMainMenu());
+});
+
+bot.hears('Начать мониторинг', (ctx) => {
+  updateMonitoring(ctx.chat.id, 1);
+  getInitalLoads(ctx.chat.id);
+  ctx.reply('Мониторинг начат', getMainMenu());
+});
+
+bot.hears('Остановить мониторинг', (ctx) => {
+  updateMonitoring(ctx.chat.id, 0);
+  ctx.reply('Мониторинг остановлен', getMainMenu());
+}
+);
+
+
+bot.hears('Удалить направления', ctx => {
+  let sqlstr = `SELECT * FROM userlinks WHERE userid=${ctx.chat.id}`;
+
+  db.all(sqlstr, [], (err, rows) => {
+    if (err) return console.error(err.message);
+    rows.forEach(row => {
+      ctx.reply(row.link, keyboardConfirm());
+    });
+  });
+
+});
+
+bot.action('delete', ctx => {
+  const deleteLinkQuery = `DELETE FROM userlinks WHERE userid=${ctx.chat.id} AND link='${ctx.callbackQuery.message.text}'`;
+  db.run(deleteLinkQuery);
+  ctx.editMessageText('Направление удалено');
+});
+
+
+
+bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/gruz\/\S+/g, (ctx) => {
+  let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
+  db.run(addQuery);
+  ctx.reply('Ссылка добавлена', getMainMenu());
+});
+
+bot.hears(/https?:\/\/lardi-trans\.[cru][oua]m?\/trans\/\S+/g, (ctx) => {
+  let addQuery = `INSERT INTO userlinks (userid, link) VALUES (${ctx.chat.id}, '${ctx.message.text}')`;
+  db.run(addQuery);
+  ctx.reply('Ссылка добавлена', getMainMenu());
+});
+
+bot.on('text', (ctx) => ctx.reply('Не могу распознать ссылку', getMainMenu()));
 
 bot.launch();
 
